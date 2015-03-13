@@ -12,7 +12,6 @@ import (
 
 func main() {
 	dlUrl := "http://localhost:3000/dlFileList"
-	//dlUrl := "http://localhost/sample.zip"
 	response, err := http.Get(dlUrl)
 
 	if err != nil {
@@ -24,7 +23,7 @@ func main() {
 	fmt.Println(response.Header)
 
 	// File open
-	file, err := os.OpenFile("hoge.html", os.O_CREATE|os.O_WRONLY, 0666)
+	file, err := os.OpenFile("hoge.zip", os.O_CREATE|os.O_WRONLY, 0666)
 	if err != nil {
 		panic(err)
 	}

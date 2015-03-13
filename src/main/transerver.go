@@ -25,40 +25,53 @@ func main() {
 	m.Run()
 }
 
-func dlFileList(params martini.Params) (int, string) {
+func dlFileList(params martini.Params) (int, []byte) {
 	root := "./public"
+	var files [1]string
+
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			return nil
 		}
 
 		rel, err := filepath.Rel(root, path)
+
 		fmt.Println(rel)
-
-		file, err := os.Open(path)
-
-		if err != nil {
-			fmt.Println(1, err)
-		}
-
-		b := make([]byte, 2)
-		file.Read(b)
-
-		var val uint8
-		err2 := binary.Read(bytes.NewBuffer(b), binary.BigEndian, &val)
-
-		if err2 != nil {
-			fmt.Println(1, err)
-		}
-
-		fmt.Println("readdata:", val)
+		files[0] = path
 
 		return nil
+
 	})
 
 	if err != nil {
 		fmt.Println(1, err)
 	}
 
-	return 200, "End!"
+	file, err := os.Open(files[0])
+
+	if err != nil {
+		fmt.Println(1, err)
+	}
+
+	fileStat, _ := file.Stat()
+	fileSize := fileStat.Size()
+
+	var buffer int64
+	buffer = 10
+
+	var val uint8
+	var i int64
+	var ret []byte
+	for i = 0; i <= (fileSize / buffer); i++ {
+		b := make([]byte, buffer)
+		file.Read(b)
+		binary.Read(bytes.NewBuffer(b), binary.BigEndian, &val)
+		for j := 0; j < len(b); j++ {
+			fmt.Printf("%X ", b[j])
+		}
+		fmt.Println("")
+		ret = b
+	}
+
+	return 200, ret
 }
