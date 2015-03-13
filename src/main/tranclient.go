@@ -18,7 +18,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	
+
 	defer response.Body.Close()
 
 	fmt.Println(response.Header)
