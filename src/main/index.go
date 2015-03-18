@@ -5,12 +5,12 @@ import (
 )
 
 type IndexViewModel struct {
-	Title string
+	Title       string
 	Description string
 }
 
 func IndexRender(r render.Render) {
-	viewModel := IndexViewModel {
+	viewModel := IndexViewModel{
 		"DemoSystem",
 		"Hello Go",
 	}
