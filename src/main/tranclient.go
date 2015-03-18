@@ -6,13 +6,14 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"strconv"
 	"time"
 )
 
 var client = &http.Client{Timeout: time.Duration(10) * time.Second}
 
-// ファイル情報
+// ファイル情報構造体
 type Info struct {
 	Name    string
 	Size    int64
@@ -22,31 +23,39 @@ type Info struct {
 }
 
 func main() {
-	// 1.ファイルリスト取得
-	// 2.いっこずつ投げる
-	// 5.Content-Length分落としてきたら次へ
-	//dlUrl := "http://localhost:3000/dlFileList"
-
-	// ダウンロードターゲット
-	dlUrl := "http://ftp.kddilabs.jp/infosystems/apache//httpd/httpd-2.4.12.tar.gz"
-	//dlUrl := "http://localhost:3000/sakura.exe"
+	// 設定ファイルに追い出したい
 	// 一度に取得するサイズ
 	var getRange int64
 	getRange = 256
 	// ダウンロード間隔
 	var interval time.Duration
 	interval = 5
+	// ダウンロードターゲット
+	var protcol string
+	protcol = "http"
+	var host string
+	host = "ftp.kddilabs.jp"
+	var port string
+	port = "80"
+	var address string
+	address = "infosystems/apache/httpd"
+	dlUrl := protcol + "://" + host + ":" + port + "/" + address + "/"
 
 	// ダウンロードしきるまでスリープしながらループ
 	for {
+		// TODO transerverから落としたいファイルの名前一覧引いてくる
+		var file string
+		file = "httpd-2.4.12.tar.gz"
+
 		// リソースサイズ、最終更新日取得
-		responseHead := do("HEAD", dlUrl, nil)
+		responseHead := do("HEAD", dlUrl+file, nil)
 		i, _ := strconv.Atoi(responseHead.Header.Get("Content-Length"))
 		contentLength := int64(i)
 		//lastModified := headMap["Last-Modified"]
+		fmt.Printf("Server Size:%d\n", contentLength)
 
 		// カレントにあるファイルのサイズ、最終更新日取得
-		info := readFileInfo("sakura.exe")
+		info := readLocalFileInfo(file)
 
 		if info.Size == contentLength {
 			break
@@ -63,7 +72,7 @@ func main() {
 		header := map[string]string{"Range": "bytes=" + start + "-" + next}
 
 		// リクエスト
-		res := do("GET", dlUrl, header)
+		res := do("GET", dlUrl+file, header)
 		fmt.Println(res.Header.Get("Content-Range"))
 
 		time.Sleep(interval * time.Second)
@@ -71,10 +80,11 @@ func main() {
 }
 
 // ファイル情報取得
-func readFileInfo(path string) Info {
+func readLocalFileInfo(path string) Info {
 	i := Info{}
 
 	if fileInfo, err := os.Stat(path); err != nil {
+		// ローカルに同一ファイルが存在しない場合0バイトからDL開始する
 		fmt.Println("NOT FOUND and NEW CREATE")
 		i.Name = path
 		i.Size = 0
@@ -86,12 +96,7 @@ func readFileInfo(path string) Info {
 		i.IsDir = fileInfo.IsDir()
 	}
 
-	//fmt.Println("Target file is...")
-	//fmt.Printf("Name: %s\n", i.Name)
-	fmt.Printf("Size: %d\n", i.Size)
-	//fmt.Printf("Mode: %s\n", i.Mode)
-	//fmt.Printf("ModTime: %s\n", i.ModTime)
-	//fmt.Printf("IsDir: %t\n", i.IsDir)
+	fmt.Printf("Client Name:%s,Size:%d,ModTime:%s,Mode:%s,IsDir:%t\n", i.Name, i.Size, i.ModTime, i.Mode, i.IsDir)
 	return i
 }
 
@@ -108,9 +113,11 @@ func do(method string, url string, header map[string]string) *http.Response {
 	}
 	defer res.Body.Close()
 
+	// GETの場合、Bodyの内容をファイルに書き込み
 	if method == "GET" {
 		// File open
-		file, err := os.OpenFile("sakura.exe", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+		_, fileName := path.Split(url)
+		file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
 		if err != nil {
 		}
 		defer file.Close()
