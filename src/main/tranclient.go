@@ -35,6 +35,7 @@ type Setting struct {
 	Host     string
 	Port     string
 	Path     string
+	File     string
 	Proxy    bool
 }
 
@@ -48,16 +49,12 @@ func main() {
 	useGlobalLogger()
 	s := initialize()
 
-	// 設定ファイルに追い出したい
-	var address string
-	address = "infosystems/apache/httpd"
-	dlUrl := s.Scheme + "://" + s.Host + "/" + address + "/"
+	dlUrl := s.Scheme + "://" + s.Host + ":" + s.Port + s.Path
 
 	// ダウンロードしきるまでスリープしながらループ
 	for {
-		// TODO transerverから落としたいファイルの名前一覧引いてくる
 		var file string
-		file = "httpd-2.4.12.tar.gz"
+		file = s.File
 
 		// リソースサイズ、最終更新日取得
 		responseHead := do("HEAD", dlUrl+file, nil)
@@ -86,7 +83,7 @@ func main() {
 
 		// リクエスト
 		_ = do("GET", dlUrl+file, header)
-		//log.Println(res.Header.Get("Content-Range"))
+		// log.Println(res.Header.Get("Content-Range"))
 
 		time.Sleep(time.Duration(s.Interval) * time.Second)
 	}
@@ -131,8 +128,9 @@ func initialize() Setting {
 	log.Println("  Host         :" + s.Host)
 	log.Println("  Port         :" + s.Port)
 	log.Println("  Path         :" + s.Path)
-	log.Println(fmt.Sprintf("  GetRange     :%d", s.GetRange))
-	log.Println(fmt.Sprintf("  Interval     :%d", s.Interval))
+	log.Println("  File         :" + s.File)
+	log.Println(fmt.Sprintf("  GetRange     :%d byte", s.GetRange))
+	log.Println(fmt.Sprintf("  Interval     :%d sec", s.Interval))
 
 	log.Println("Read setting file end.")
 
@@ -147,17 +145,20 @@ func createDefaultSetting() {
 
 	s := Setting{}
 
-	s.Proxy = true
+	s.Proxy = false
 	s.GetRange = 1024
 	s.Interval = 5
-	downloadUrl, err := url.Parse("http://ftp.kddilabs.jp:80/infosystems/apache/httpd/httpd-2.4.12.tar.gz")
+	//	downloadUrl, err := url.Parse("http://ftp.kddilabs.jp/infosystems/apache/httpd/httpd-2.4.12.tar.gz")
+	downloadUrl, err := url.Parse("https://github.com:443/gosyujin/gosyujin.github.com/archive/v1.0.tar.gz")
 	if err != nil {
 	}
 	s.Scheme = downloadUrl.Scheme
+	fmt.Println(downloadUrl.Host)
+	fmt.Println(net.SplitHostPort(downloadUrl.Host))
 	host, port, _ := net.SplitHostPort(downloadUrl.Host)
 	s.Host = host
 	s.Port = port
-	s.Path = downloadUrl.Path
+	s.Path, s.File = path.Split(downloadUrl.Path)
 
 	encoder := json.NewEncoder(file)
 	encoder.Encode(s)
