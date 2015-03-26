@@ -124,6 +124,7 @@ func initialize() Setting {
 
 	log.Println("  HTTP_PROXY   :" + os.Getenv("http_proxy"))
 	log.Println("  HTTPS_PROXY  :" + os.Getenv("https_proxy"))
+	log.Println("  Url          :" + s.Scheme + "://" + s.Host + ":" + s.Port + s.Path + s.File)
 	log.Println("  Scheme       :" + s.Scheme)
 	log.Println("  Host         :" + s.Host)
 	log.Println("  Port         :" + s.Port)
@@ -146,10 +147,10 @@ func createDefaultSetting() {
 	s := Setting{}
 
 	s.Proxy = false
-	s.GetRange = 1024
-	s.Interval = 5
-	//	downloadUrl, err := url.Parse("http://ftp.kddilabs.jp/infosystems/apache/httpd/httpd-2.4.12.tar.gz")
-	downloadUrl, err := url.Parse("https://github.com:443/gosyujin/gosyujin.github.com/archive/v1.0.tar.gz")
+	s.GetRange = 2048
+	s.Interval = 3
+	downloadUrl, err := url.Parse("http://ftp.kddilabs.jp:80/infosystems/apache/httpd/httpd-2.4.12.tar.gz")
+	//downloadUrl, err := url.Parse("https://github.com:443/gosyujin/gosyujin.github.com/archive/v1.0.tar.gz")
 	if err != nil {
 	}
 	s.Scheme = downloadUrl.Scheme
