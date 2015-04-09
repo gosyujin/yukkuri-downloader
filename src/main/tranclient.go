@@ -61,14 +61,27 @@ func main() {
 		i, _ := strconv.Atoi(responseHead.Header.Get("Content-Length"))
 		contentLength := int64(i)
 		serverFileSize = contentLength
-		//lastModified := responseHead.Header.Get("Last-Modified")
+		serverModTime, err := time.Parse(time.RFC1123, responseHead.Header.Get("Last-Modified"))
+		if err != nil {}
 
 		// ローカルにあるファイルの情報取得
 		info := readLocalFileInfo(file)
 		localFileSize = info.Size
+                localModTime := info.ModTime
 
-		if localFileSize == serverFileSize {
-			break
+		if isNewerServerFile(serverModTime, localModTime) {
+			// サーバのファイルの方が新しい場合ファイル削除
+			fmt.Println("")
+			log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
+			log.Println("Change server file ? And delete file")
+			if err := os.Remove(file); err != nil {}
+		} else {
+			if localFileSize == serverFileSize {
+				fmt.Println("")
+				log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
+				log.Println("Download Complete")
+				break
+			}
 		}
 
 		// ヘッダのRange組み立て
@@ -185,6 +198,7 @@ func readLocalFileInfo(path string) Info {
 		log.Println("NOT FOUND and NEW CREATE: " + path)
 		i.Name = path
 		i.Size = 0
+		i.ModTime = time.Now()
 	} else {
 		i.Name = fileInfo.Name()
 		i.Size = fileInfo.Size()
@@ -195,6 +209,17 @@ func readLocalFileInfo(path string) Info {
 
 	//fmt.Printf("Client Name:%s,Size:%d,ModTime:%s,Mode:%s,IsDir:%t\n", i.Name, i.Size, i.ModTime, i.Mode, i.IsDir)
 	return i
+}
+
+// サーバのファイルが更新されているか比較する
+func isNewerServerFile(server time.Time, local time.Time) bool {
+	if server.Sub(local) > 0 {
+		// server is new
+		return true
+	} else {
+		// server is old
+		return false
+	}
 }
 
 // リクエストと、ファイル書き込み
