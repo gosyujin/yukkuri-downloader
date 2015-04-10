@@ -68,19 +68,22 @@ func main() {
 		contentLength := int64(i)
 		serverFileSize = contentLength
 		serverModTime, err := time.Parse(time.RFC1123, responseHead.Header.Get("Last-Modified"))
-		if err != nil {}
+		if err != nil {
+		}
 
 		// ローカルにあるファイルの情報取得
 		info := readLocalFileInfo(file)
 		localFileSize = info.Size
-                localModTime := info.ModTime
+		localModTime := info.ModTime
 
 		if isNewerServerFile(serverModTime, localModTime) {
 			// サーバのファイルの方が新しい場合ファイル削除
 			fmt.Println("")
 			log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
 			log.Println("Change server file ? And delete file")
-			if err := os.Remove(file); err != nil {}
+
+			if err := os.Remove(file); err != nil {
+			}
 			
 			// プログレスバーの更新のため、ファイルを消したタイミングでファイルサイズクリア
 			localFileSize = 0
