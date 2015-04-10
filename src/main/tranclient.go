@@ -70,16 +70,21 @@ func main() {
 		serverModTime, err := time.Parse(time.RFC1123, responseHead.Header.Get("Last-Modified"))
 		if err != nil {
 		}
+		serverModTime = serverModTime.UTC()
 
 		// ローカルにあるファイルの情報取得
 		info := readLocalFileInfo(file)
 		localFileSize = info.Size
-		localModTime := info.ModTime
+		localModTime, err := time.Parse(time.RFC1123, info.ModTime.Format(time.RFC1123))
+		if err != nil {
+		}
+		localModTime = localModTime.UTC()
 
 		if isNewerServerFile(serverModTime, localModTime) {
 			// サーバのファイルの方が新しい場合ファイル削除
 			fmt.Println("")
-			log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
+			log.Println(fmt.Sprintf("Timestamp server: %v", serverModTime))
+			log.Println(fmt.Sprintf("Timestamp local : %v", localModTime))
 			log.Println("Change server file ? And delete file")
 
 			if err := os.Remove(file); err != nil {
@@ -90,7 +95,8 @@ func main() {
 		} else {
 			if localFileSize == serverFileSize {
 				fmt.Println("")
-				log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
+				log.Println(fmt.Sprintf("Timestamp server: %v", serverModTime))
+				log.Println(fmt.Sprintf("Timestamp local : %v", localModTime))
 				log.Println("Download Complete")
 				break
 			}
