@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"runtime"
 	"strconv"
 	"time"
 )
@@ -39,15 +40,20 @@ type Setting struct {
 	Proxy    bool
 }
 
-// Windows以外はos.Getenv("HOME")？
-var settingFile = os.Getenv("USERPROFILE") + "/go-tran.json"
 var client = &http.Client{Timeout: time.Duration(10) * time.Second}
 var localFileSize int64
 var serverFileSize int64
 
 func main() {
+	var settingFile string
+	if runtime.GOOS == "windows" {
+		settingFile = os.Getenv("USERPROFILE") + "/go-tran.json"
+	} else {
+		settingFile = os.Getenv("HOME") + "/go-tran.json"
+	}
+
 	useGlobalLogger()
-	s := initialize()
+	s := initialize(settingFile)
 
 	dlUrl := s.Scheme + "://" + s.Host + ":" + s.Port + s.Path
 
@@ -61,14 +67,27 @@ func main() {
 		i, _ := strconv.Atoi(responseHead.Header.Get("Content-Length"))
 		contentLength := int64(i)
 		serverFileSize = contentLength
-		//lastModified := responseHead.Header.Get("Last-Modified")
+		serverModTime, err := time.Parse(time.RFC1123, responseHead.Header.Get("Last-Modified"))
+		if err != nil {}
 
 		// ローカルにあるファイルの情報取得
 		info := readLocalFileInfo(file)
 		localFileSize = info.Size
+                localModTime := info.ModTime
 
-		if localFileSize == serverFileSize {
-			break
+		if isNewerServerFile(serverModTime, localModTime) {
+			// サーバのファイルの方が新しい場合ファイル削除
+			fmt.Println("")
+			log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
+			log.Println("Change server file ? And delete file")
+			if err := os.Remove(file); err != nil {}
+		} else {
+			if localFileSize == serverFileSize {
+				fmt.Println("")
+				log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
+				log.Println("Download Complete")
+				break
+			}
 		}
 
 		// ヘッダのRange組み立て
@@ -92,11 +111,11 @@ func main() {
 func useGlobalLogger() {
 	log.SetFlags(log.Ldate | log.Ltime)
 	//log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.SetPrefix("[go-tran]")
+	log.SetPrefix("[go-tran] ")
 }
 
 // 初期設定
-func initialize() Setting {
+func initialize(settingFile string) Setting {
 	log.Println("Initialize.")
 	log.Println("Read setting file: " + settingFile)
 	s := Setting{}
@@ -106,11 +125,11 @@ func initialize() Setting {
 	if os.IsNotExist(err) {
 		log.Println(err)
 		log.Println("Create json file as default value: " + settingFile)
-		createDefaultSetting()
+		createDefaultSetting(settingFile)
 	}
 
 	// 設定ファイル読み込み構造体に格納
-	s = readSettingFile()
+	s = readSettingFile(settingFile)
 
 	if s.Proxy {
 		log.Println("USE system proxy HTTP_PROXY and HTTPS_PROXY")
@@ -139,7 +158,7 @@ func initialize() Setting {
 }
 
 // ~/ にデフォルトの設定ファイルを生成する
-func createDefaultSetting() {
+func createDefaultSetting(settingFile string) {
 	file, err := os.Create(settingFile)
 	if err != nil {
 	}
@@ -166,7 +185,7 @@ func createDefaultSetting() {
 }
 
 // 設定ファイル読み込み
-func readSettingFile() Setting {
+func readSettingFile(settingFile string) Setting {
 	jsonString, err := ioutil.ReadFile(settingFile)
 	if err != nil {
 	}
@@ -185,6 +204,7 @@ func readLocalFileInfo(path string) Info {
 		log.Println("NOT FOUND and NEW CREATE: " + path)
 		i.Name = path
 		i.Size = 0
+		i.ModTime = time.Now()
 	} else {
 		i.Name = fileInfo.Name()
 		i.Size = fileInfo.Size()
@@ -193,8 +213,19 @@ func readLocalFileInfo(path string) Info {
 		i.IsDir = fileInfo.IsDir()
 	}
 
-	//fmt.Printf("Client Name:%s,Size:%d,ModTime:%s,Mode:%s,IsDir:%t\n", i.Name, i.Size, i.ModTime, i.Mode, i.IsDir)
+	//log.Printf("Client Name: %s, Size: %d, ModTime: %s, Mode: %s, IsDir: %t", i.Name, i.Size, i.ModTime, i.Mode, i.IsDir)
 	return i
+}
+
+// サーバのファイルが更新されているか比較する
+func isNewerServerFile(server time.Time, local time.Time) bool {
+	if server.Sub(local) > 0 {
+		//log.Printf("Server is new")
+		return true
+	} else {
+		//log.Printf("Server is old")
+		return false
+	}
 }
 
 // リクエストと、ファイル書き込み
