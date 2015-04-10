@@ -207,17 +207,17 @@ func readLocalFileInfo(path string) Info {
 		i.IsDir = fileInfo.IsDir()
 	}
 
-	//fmt.Printf("Client Name:%s,Size:%d,ModTime:%s,Mode:%s,IsDir:%t\n", i.Name, i.Size, i.ModTime, i.Mode, i.IsDir)
+	//log.Printf("Client Name: %s, Size: %d, ModTime: %s, Mode: %s, IsDir: %t", i.Name, i.Size, i.ModTime, i.Mode, i.IsDir)
 	return i
 }
 
 // サーバのファイルが更新されているか比較する
 func isNewerServerFile(server time.Time, local time.Time) bool {
 	if server.Sub(local) > 0 {
-		// server is new
+		//log.Printf("Server is new")
 		return true
 	} else {
-		// server is old
+		//log.Printf("Server is old")
 		return false
 	}
 }
