@@ -111,7 +111,7 @@ func main() {
 func useGlobalLogger() {
 	log.SetFlags(log.Ldate | log.Ltime)
 	//log.SetFlags(log.Ldate | log.Ltime | log.Lshortfile)
-	log.SetPrefix("[go-tran]")
+	log.SetPrefix("[go-tran] ")
 }
 
 // 初期設定
