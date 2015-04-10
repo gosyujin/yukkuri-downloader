@@ -81,6 +81,9 @@ func main() {
 			log.Println(fmt.Sprintf("Timestamp server: %v local: %v", serverModTime, localModTime))
 			log.Println("Change server file ? And delete file")
 			if err := os.Remove(file); err != nil {}
+			
+			// プログレスバーの更新のため、ファイルを消したタイミングでファイルサイズクリア
+			localFileSize = 0
 		} else {
 			if localFileSize == serverFileSize {
 				fmt.Println("")
