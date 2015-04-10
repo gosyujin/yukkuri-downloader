@@ -84,7 +84,7 @@ func main() {
 
 			if err := os.Remove(file); err != nil {
 			}
-			
+
 			// プログレスバーの更新のため、ファイルを消したタイミングでファイルサイズクリア
 			localFileSize = 0
 		} else {
