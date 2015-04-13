@@ -213,11 +213,12 @@ func readLocalFileInfo(path string) Info {
 
 	if fileInfo, err := os.Stat(path); err != nil {
 		// ローカルに同一ファイルが存在しない場合0バイトからDL開始する
-		log.Println("NOT FOUND and NEW CREATE: " + path)
+		log.Println("NOT found: " + path)
 		i.Name = path
 		i.Size = 0
 		i.ModTime = time.Now()
 	} else {
+		// log.Println("found: " + path)
 		i.Name = fileInfo.Name()
 		i.Size = fileInfo.Size()
 		i.Mode = fileInfo.Mode()
@@ -256,6 +257,13 @@ func do(method string, url string, header map[string]string) *http.Response {
 
 	// GETの場合、Bodyの内容をファイルに書き込み
 	if method == "GET" {
+
+		if res.StatusCode != http.StatusPartialContent {
+			log.Println("This url is NOT supported partial GET request")
+			log.Println("Exit")
+			os.Exit(1)
+		}
+
 		// File open
 		_, fileName := path.Split(url)
 		file, err := os.OpenFile(fileName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
