@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 	"github.com/cheggaaa/pb"
 	// 使いたいけどWindowsだとめんどくさそう
@@ -143,6 +144,43 @@ func initialize(settingFile string) Setting {
 	// 設定ファイル読み込み構造体に格納
 	s = readSettingFile(settingFile)
 
+	// 引数があれば上書き
+	argGetRange := flag.Int("r", 0, "getRange(byte)")
+	argInterval := flag.Int("i", 0, "download interval(sec)")
+	argUrl := flag.String("u", "", "download file")
+	argNoProxy := flag.Bool("no-proxy", false, "NOT use proxy")
+	argUseProxy := flag.Bool("proxy", false, "use proxy")
+	flag.Parse()
+
+	if *argGetRange != 0 {
+		log.Println("  Override getRange by ARGS")
+		s.GetRange = int64(*argGetRange)
+	}
+	if *argInterval != 0 {
+		log.Println("  Override interval by ARGS")
+		s.Interval = int64(*argInterval)
+	}
+	if *argUrl != "" {
+		log.Println("  Override url by ARGS")
+		downloadUrl, err := url.Parse(*argUrl)
+		if err != nil {
+		}
+		s.Scheme = downloadUrl.Scheme
+		host, port, _ := net.SplitHostPort(downloadUrl.Host)
+		s.Host = host
+		s.Port = port
+		s.Path, s.File = path.Split(downloadUrl.Path)
+	}
+
+	if *argUseProxy {
+		log.Println("  Override USE system proxy by ARGS")
+		s.Proxy = true
+	}
+	if *argNoProxy {
+		log.Println("  Override NO system proxy by ARGS")
+		s.Proxy = false
+	}
+
 	if s.Proxy {
 		log.Println("USE system proxy HTTP_PROXY and HTTPS_PROXY")
 	} else {
@@ -185,8 +223,6 @@ func createDefaultSetting(settingFile string) {
 	if err != nil {
 	}
 	s.Scheme = downloadUrl.Scheme
-	fmt.Println(downloadUrl.Host)
-	fmt.Println(net.SplitHostPort(downloadUrl.Host))
 	host, port, _ := net.SplitHostPort(downloadUrl.Host)
 	s.Host = host
 	s.Port = port
